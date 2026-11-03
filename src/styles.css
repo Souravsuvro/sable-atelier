@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces", "Iowan Old Style", Palatino, Georgia, serif;
+
+  --color-ink: #161411;
+  --color-raise: #221f1b;
+  --color-line: #3a342c;
+  --color-cream: #f3eee6;
+  --color-muted: #a3988c;
+  --color-brass: #b8893d;
+  --color-brass-2: #e0c48a;
+  --color-plaster: #d7d0c4;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  html,
+  body {
+    height: 100%;
+    background: var(--color-ink);
+    color: var(--color-cream);
+  }
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    line-height: 1.5;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@keyframes sable-meter {
+  0% {
+    transform: translateX(-80%);
+  }
+  100% {
+    transform: translateX(240%);
+  }
+}
+
+.sable-meter {
+  animation: sable-meter 1.15s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sable-meter {
+    animation: none;
+  }
+}
