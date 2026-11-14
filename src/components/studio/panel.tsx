@@ -58,7 +58,7 @@ const ICONS: Record<ItemType, LucideIcon> = {
   ottoman: RectangleHorizontal,
 };
 
-const CHIPS = ["Japandi living room", "Moody evening lounge", "A quiet bedroom", "Tidy what is already here", "Marble gallery", "Add a reading corner"];
+const CHIPS = ["Set this up as an office", "A quiet workspace", "A calm house", "Add a navy chair", "Marble floor", "Tidy what is already here"];
 
 function sceneNow(): StudioScene {
   const s = useStudio.getState();
@@ -657,7 +657,7 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 export function Panel() {
-  const [tab, setTab] = useState<TabId>("pieces");
+  const [tab, setTab] = useState<TabId>("architect");
   const [busy, setBusy] = useState(false);
 
   return (

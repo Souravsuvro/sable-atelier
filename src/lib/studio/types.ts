@@ -27,7 +27,7 @@ export type WallId = (typeof WALLS)[number];
 export const LIGHTS = ["north-light", "golden-hour", "evening", "gallery"] as const;
 export type LightingPreset = (typeof LIGHTS)[number];
 
-export const PRESETS = ["living", "dining", "bedroom", "gallery", "moody"] as const;
+export const PRESETS = ["living", "dining", "bedroom", "gallery", "moody", "office", "workspace"] as const;
 export type PresetName = (typeof PRESETS)[number];
 
 export const RENDER_STATUSES = ["IN_QUEUE", "IN_PROGRESS", "COMPLETED", "FAILED"] as const;

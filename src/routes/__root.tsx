@@ -13,7 +13,7 @@ export const Route = createRootRoute({
       { title: APP_NAME },
       {
         name: "description",
-        content: "Compose a room, tune the materials, and render the scheme with Sable Atelier.",
+        content: "Design a house, an office, or a workspace by writing what should change. Sable Atelier keeps the model in the browser.",
       },
       { name: "theme-color", content: "#161411" },
     ],

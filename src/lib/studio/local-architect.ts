@@ -88,6 +88,8 @@ function tweakCalls(q: string): AgentCall[] {
 }
 
 function pickPreset(q: string): PresetName {
+  if (/workspace|home office|desk/.test(q)) return "workspace";
+  if (/office|meeting room|studio office/.test(q)) return "office";
   if (/bedroom|sleep/.test(q)) return "bedroom";
   if (/dining|supper/.test(q)) return "dining";
   if (/gallery|museum|minimal/.test(q)) return "gallery";
@@ -116,7 +118,7 @@ export function interpretBrief(text: string, scene: StudioScene): ArchitectPlan 
   const q = text.toLowerCase();
   const adding = /\b(add|place|put|drop|need|insert|include|bring)\b/.test(q);
   const removing = /\b(remove|delete|take away|get rid)\b/.test(q);
-  const styling = /\b(japandi|scandi|scandinavian|moody|gallery|bedroom|dining room|living room|lounge|restyle|redesign|make this|turn this|scheme)\b/.test(q);
+  const styling = /\b(japandi|scandi|scandinavian|moody|gallery|bedroom|dining room|living room|lounge|restyle|redesign|make this|turn this|scheme|office|workspace|home office|house|meeting room)\b/.test(q);
 
   if (/reading corner|reading nook|place to read/.test(q)) {
     const calls: AgentCall[] = [];

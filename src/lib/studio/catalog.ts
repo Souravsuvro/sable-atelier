@@ -76,11 +76,13 @@ export const WALL_SWATCH: Record<WallFinish, string> = {
 };
 
 export const PRESET_LABEL: Record<PresetName, string> = {
-  living: "Living",
+  living: "House",
   dining: "Dining",
   bedroom: "Sleep",
   gallery: "Gallery",
   moody: "Moody",
+  office: "Office",
+  workspace: "Workspace",
 };
 
 export const PRESET_COPY: Record<PresetName, string> = {
@@ -90,6 +92,10 @@ export const PRESET_COPY: Record<PresetName, string> = {
   bedroom: "The bed takes the north wall. Warm light, a rug under the sleep zone, and one chair left for the morning.",
   gallery: "Almost empty on purpose. One sofa, one table, concrete underfoot, and light that does not flatter.",
   moody: "Evening, walnut, and a darker cloth. The lamps do the work and the walls stay quiet.",
+  office:
+    "A work table in the middle, two chairs for a conversation, and storage on the walls. The floor is walnut so the room reads as an office, not a dining room.",
+  workspace:
+    "One desk on the north wall, one chair, a lamp, and a case of books. Enough for a day of work, and a clear path behind the chair.",
 };
 
 export const PAINTS = ["#f3eee6", "#d9c7a6", "#3f5346", "#243044", "#8f3d36", "#1c1a17", "#b8893d", "#6b4a32"];
@@ -193,6 +199,34 @@ export function presetCalls(name: PresetName, room: RoomSize): AgentCall[] {
       place("armchair", 1.7, sofaZ + 1.2, -0.4, "#1c1a17"),
       place("bookshelf", hw - 0.1 - CATALOG.bookshelf.depth / 2, 0.4, -Math.PI / 2, "#5c4332"),
       place("plant", -hw + 0.48, hd - 0.48, 0, "#3f5344"),
+    ];
+  }
+
+  if (name === "office") {
+    const tz = 0.15;
+    return [
+      ...shell("walnut", "limewash", "north-light", { wall: "north", finish: "oak-panel" }),
+      place("rug", 0, tz, 0, "#243044"),
+      place("dining-table", 0, tz, 0, "#4a3222"),
+      place("dining-chair", -0.55, tz + 0.78, Math.PI, "#e6e0d4"),
+      place("dining-chair", 0.55, tz + 0.78, Math.PI, "#1c1a17"),
+      place("sideboard", 0, -hd + 0.12 + CATALOG.sideboard.depth / 2, 0, "#2a261f"),
+      place("bookshelf", hw - 0.12 - CATALOG.bookshelf.depth / 2, 0.15, -Math.PI / 2, "#5c4332"),
+      place("floor-lamp", -hw + 0.42, hd - 0.48, 0, "#221f1c"),
+      place("plant", hw - 0.48, -hd + 0.5, 0, "#3f5344"),
+    ];
+  }
+
+  if (name === "workspace") {
+    const deskZ = -hd + 0.16 + CATALOG["dining-table"].depth / 2;
+    return [
+      ...shell("oak", "plaster", "north-light", { wall: "north", finish: "sage" }),
+      place("dining-table", 0, deskZ, 0, "#6e4e34"),
+      place("dining-chair", 0, deskZ + 0.78, Math.PI, "#3f5346"),
+      place("bookshelf", -hw + 0.12 + CATALOG.bookshelf.depth / 2, 0.35, Math.PI / 2, "#5c4332"),
+      place("floor-lamp", 1.2, deskZ + 0.05, 0, "#221f1c"),
+      place("plant", hw - 0.48, hd - 0.48, 0, "#3f5344"),
+      place("ottoman", 1.45, 0.85, 0, "#6e5844"),
     ];
   }
 

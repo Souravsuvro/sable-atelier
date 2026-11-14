@@ -8,7 +8,8 @@ import { coverageRatio } from "@/lib/studio/layout";
 import { useStudio } from "@/lib/studio/store";
 import type { PresetName } from "@/lib/studio/types";
 
-const HEADER_PRESETS: PresetName[] = ["living", "dining", "bedroom", "gallery"];
+const HEADER_PRESETS: PresetName[] = ["living", "office", "workspace"];
+const OFFER_KEY = "sable-offer-seen";
 
 const Viewport = lazy(() => import("@/components/studio/viewport").then((mod) => ({ default: mod.Viewport })));
 const ArDialog = lazy(() => import("@/components/studio/ar-dialog").then((mod) => ({ default: mod.ArDialog })));
@@ -17,6 +18,63 @@ function StageHold({ label }: { label: string }) {
   return (
     <div className="grid h-full min-h-0 place-items-center bg-plaster text-ink">
       <p className="text-sm">{label}</p>
+    </div>
+  );
+}
+
+const PROGRAMS: { name: PresetName; title: string; line: string }[] = [
+  { name: "living", title: "House", line: "Living, dining, and sleep. North light, timber, and a clear center." },
+  { name: "office", title: "Office", line: "A work table, two chairs, and storage on the walls." },
+  { name: "workspace", title: "Workspace", line: "One desk, one chair, a lamp, and a case of books." },
+];
+
+function Offer({ onOpen }: { onOpen: (name: PresetName | null) => void }) {
+  return (
+    <div className="fixed inset-0 z-30 flex overflow-y-auto bg-ink text-cream">
+      <div className="mx-auto flex w-full max-w-3xl flex-col justify-between gap-10 px-6 py-8 sm:px-10 sm:py-12">
+        <div>
+          <p className="text-xs uppercase tracking-widest text-muted">Sable Atelier</p>
+          <h1 className="mt-4 max-w-xl font-display text-4xl leading-tight sm:text-5xl">Design the room by writing it.</h1>
+          <p className="mt-4 max-w-lg text-base text-muted">
+            A house, an office, or a workspace. Say what should change and the model moves. Plans stay on this device.
+          </p>
+          <div className="mt-8 grid gap-3 sm:grid-cols-3">
+            {PROGRAMS.map((program) => (
+              <button
+                key={program.name}
+                type="button"
+                className="rounded-2xl border border-line px-4 py-4 text-left transition-[border-color,background-color] duration-150 hover:border-brass hover:bg-line/40"
+                onClick={() => onOpen(program.name)}
+              >
+                <span className="block font-display text-2xl">{program.title}</span>
+                <span className="mt-2 block text-sm text-muted">{program.line}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-end sm:justify-between">
+          <p className="max-w-md text-sm text-muted">
+            Membership is £29 a month. It is how this practice is paid for. The model opens either way.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <a
+              className="inline-flex min-h-11 items-center rounded-full bg-brass px-4 text-sm font-medium text-ink"
+              href="https://whop.com/checkout/plan_HsFW7j49G6JqA"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Subscribe
+            </a>
+            <button
+              type="button"
+              className="inline-flex min-h-11 items-center rounded-full border border-line px-4 text-sm text-cream"
+              onClick={() => onOpen(null)}
+            >
+              Open the model
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -49,6 +107,25 @@ export function StudioApp() {
   const past = useStudio((s) => s.past.length);
   const future = useStudio((s) => s.future.length);
   const [board, setBoard] = useState(true);
+  const [offer, setOffer] = useState(false);
+
+  useEffect(() => {
+    try {
+      setOffer(window.sessionStorage.getItem(OFFER_KEY) !== "1");
+    } catch {
+      setOffer(true);
+    }
+  }, []);
+
+  function openFromOffer(name: PresetName | null) {
+    try {
+      window.sessionStorage.setItem(OFFER_KEY, "1");
+    } catch {
+      /* storage can be blocked in an embedded frame */
+    }
+    if (name) applyCalls(presetCalls(name, useStudio.getState().room));
+    setOffer(false);
+  }
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -180,6 +257,7 @@ export function StudioApp() {
       <Suspense fallback={null}>
         <ArDialog />
       </Suspense>
+      {offer ? <Offer onOpen={openFromOffer} /> : null}
     </main>
   );
 }
