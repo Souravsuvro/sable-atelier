@@ -1,6 +1,7 @@
 import { CATALOG, DEFAULT_ROOM, FLOOR_LABEL, LIGHT_LABEL, WALL_LABEL, presetCalls } from "@/lib/studio/catalog";
 import {
   FLOORS,
+  ITEM_TYPES,
   LIGHTS,
   WALLS,
   WALL_FINISHES,
@@ -31,8 +32,8 @@ export function safeColor(color: string, fallback: string): string {
 
 export function clampRoom(width: number, depth: number, height = DEFAULT_ROOM.height): RoomSize {
   return {
-    width: clamp(Math.round(width * 10) / 10, 4, 8),
-    depth: clamp(Math.round(depth * 10) / 10, 3.6, 7),
+    width: clamp(Math.round(width * 10) / 10, 4, 18),
+    depth: clamp(Math.round(depth * 10) / 10, 3.6, 14),
     height,
   };
 }
@@ -63,7 +64,7 @@ function aabb(node: FurnitureNode) {
 }
 
 function blocks(a: FurnitureNode, b: FurnitureNode): boolean {
-  if (a.type === "rug" || b.type === "rug") return false;
+  if (a.type === "rug" || b.type === "rug" || a.type === "roof" || b.type === "roof") return false;
   const A = aabb(a);
   const B = aabb(b);
   const gap = 0.08;
@@ -280,7 +281,7 @@ function readWalls(value: unknown): Record<WallId, WallFinish> | null {
 export function sanitizeNode(value: unknown): FurnitureNode | null {
   if (!value || typeof value !== "object") return null;
   const n = value as Record<string, unknown>;
-  if (!oneOf(["sofa", "armchair", "coffee-table", "dining-table", "dining-chair", "floor-lamp", "plant", "bookshelf", "sideboard", "bed", "rug", "ottoman"] as const, n.type)) {
+  if (!oneOf(ITEM_TYPES, n.type)) {
     return null;
   }
   if (typeof n.x !== "number" || typeof n.z !== "number") return null;
@@ -312,6 +313,18 @@ export function sanitizeScene(input: unknown): StudioScene | null {
         .map((n) => clampNode(n, room))
     : [];
   return { floor: raw.floor, lighting: raw.lighting as LightingPreset, walls, room, nodes };
+}
+
+export function createSpaceScene(kind: "interior" | "front" | "back" | "shell"): StudioScene {
+  const hedge = { north: "hedge" as const, south: "hedge" as const, east: "hedge" as const, west: "hedge" as const };
+  const plaster = { north: "plaster" as const, south: "plaster" as const, east: "plaster" as const, west: "plaster" as const };
+  if (kind === "front" || kind === "back") {
+    return { room: { width: 12, depth: 9, height: 2.8 }, floor: "grass", walls: hedge, lighting: "north-light", nodes: [] };
+  }
+  if (kind === "shell") {
+    return { room: { width: 7.2, depth: 5.6, height: 5.2 }, floor: "concrete", walls: plaster, lighting: "gallery", nodes: [] };
+  }
+  return { room: { ...DEFAULT_ROOM }, floor: "oak", walls: plaster, lighting: "north-light", nodes: [] };
 }
 
 export function createDefaultScene(): StudioScene {

@@ -5,13 +5,19 @@ import {
   BedDouble,
   BookOpen,
   Camera,
+  Car,
+  FileText,
   Flower2,
+  Home,
+  Lamp,
   LampFloor,
   Layers,
   MessageSquare,
   RectangleHorizontal,
   Sofa,
   Table2,
+  Trees,
+  Waves,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,7 +33,7 @@ import {
   WALL_SWATCH,
 } from "@/lib/studio/catalog";
 import { coverageRatio } from "@/lib/studio/layout";
-import { interpretBrief } from "@/lib/studio/local-architect";
+import { interpretBrief, STARTERS } from "@/lib/studio/local-architect";
 import { buildRenderPrompt } from "@/lib/studio/prompt";
 import { useStudio } from "@/lib/studio/store";
 import {
@@ -50,15 +56,26 @@ const ICONS: Record<ItemType, LucideIcon> = {
   "dining-table": Table2,
   "dining-chair": Armchair,
   "floor-lamp": LampFloor,
+  pendant: Lamp,
+  sconce: Lamp,
+  "desk-lamp": Lamp,
   plant: Flower2,
   bookshelf: BookOpen,
   sideboard: Archive,
   bed: BedDouble,
   rug: RectangleHorizontal,
   ottoman: RectangleHorizontal,
+  stair: Home,
+  roof: Home,
+  pool: Waves,
+  parking: Car,
+  playground: Home,
+  "garden-bed": Flower2,
+  tree: Trees,
+  bench: RectangleHorizontal,
 };
 
-const CHIPS = ["Set this up as an office", "A quiet workspace", "A calm house", "Add a navy chair", "Marble floor", "Tidy what is already here"];
+const CHIPS = STARTERS.slice(0, 4);
 
 function sceneNow(): StudioScene {
   const s = useStudio.getState();
@@ -403,6 +420,14 @@ function Architect() {
     }
   }
 
+  const hints =
+    draft.trim().length < 2
+      ? []
+      : STARTERS.filter((line) => {
+          const words = draft.toLowerCase().split(/\s+/).filter((word) => word.length > 2);
+          return words.some((word) => line.toLowerCase().includes(word));
+        }).slice(0, 4);
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
@@ -425,12 +450,27 @@ function Architect() {
         ))}
       </div>
       <form
-        className="mt-3 flex gap-2"
+        className="mt-3 flex flex-col gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           void send(draft);
         }}
       >
+        {hints.length > 0 ? (
+          <div className="flex flex-col gap-1">
+            {hints.map((hint) => (
+              <button
+                key={hint}
+                type="button"
+                className="rounded-xl border border-line px-3 py-2 text-left text-xs text-muted hover:border-brass hover:text-cream"
+                onClick={() => void send(hint)}
+              >
+                {hint}
+              </button>
+            ))}
+          </div>
+        ) : null}
+        <div className="flex gap-2">
         <label className="sr-only" htmlFor="brief">
           Design brief
         </label>
@@ -445,12 +485,13 @@ function Architect() {
               void send(draft);
             }
           }}
-          placeholder="A north-lit room with a low sofa and one olive tree"
+          placeholder="A front yard with a pool, or a stair and a gable roof"
           className="min-h-11 flex-1 resize-none rounded-xl border border-line bg-ink px-3 py-2 text-base text-cream outline-none focus:border-brass"
         />
         <Button tone="brass" type="submit" disabled={pending || draft.trim().length === 0}>
           Send
         </Button>
+        </div>
       </form>
     </div>
   );
@@ -647,9 +688,86 @@ function Stills({ busy, setBusy, openArchitect }: { busy: boolean; setBusy: (v: 
   );
 }
 
+function Drawings() {
+  const drawings = useStudio((s) => s.drawings);
+  const addDrawing = useStudio((s) => s.addDrawing);
+  const removeDrawing = useStudio((s) => s.removeDrawing);
+  const [note, setNote] = useState("");
+
+  async function take(file: File | undefined) {
+    if (!file) return;
+    const allowed = file.type.startsWith("image/") || file.type === "application/pdf";
+    if (!allowed) {
+      setNote("Use a PDF, or a scan of the plan.");
+      return;
+    }
+    if (file.size > 1_500_000) {
+      setNote("Keep each drawing under 1.5 MB. It stays on this device.");
+      return;
+    }
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error("Could not read that drawing."));
+      reader.readAsDataURL(file);
+    }).catch((err: unknown) => {
+      setNote(err instanceof Error ? err.message : "Could not read that drawing.");
+      return null;
+    });
+    if (!dataUrl) return;
+    addDrawing({ id: makeId(), name: file.name, mime: file.type, size: file.size, dataUrl });
+    setNote(file.size > 350_000 ? "Saved for this visit. A smaller file will still be here after you reload." : "");
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-muted">
+        Floor plans, elevations, and sections from the architect. They sit beside the model. They are not traced into walls.
+      </p>
+      <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-line px-4 text-center text-sm text-muted hover:border-brass">
+        Drop a drawing
+        <input
+          type="file"
+          accept="application/pdf,image/*"
+          className="sr-only"
+          onChange={(e) => {
+            void take(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+        />
+      </label>
+      {note ? <p className="text-sm text-brass">{note}</p> : null}
+      <ul className="space-y-3">
+        {drawings.map((drawing) => (
+          <li key={drawing.id} className="rounded-2xl border border-line p-3">
+            <p className="truncate text-sm">{drawing.name}</p>
+            <p className="text-xs text-muted">{Math.max(1, Math.round(drawing.size / 1024))} KB</p>
+            {drawing.dataUrl && drawing.mime.startsWith("image/") ? (
+              <img src={drawing.dataUrl} alt="" className="mt-2 max-h-40 w-full rounded-lg object-contain" />
+            ) : null}
+            <div className="mt-2 flex gap-2">
+              {drawing.dataUrl ? (
+                <a className="text-sm text-brass underline" href={drawing.dataUrl} target="_blank" rel="noreferrer">
+                  Open
+                </a>
+              ) : (
+                <span className="text-xs text-muted">Too large to keep after reload</span>
+              )}
+              <button type="button" className="text-sm text-muted" onClick={() => removeDrawing(drawing.id)}>
+                Remove
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 const TABS = [
   { id: "pieces", label: "Pieces", icon: Armchair },
   { id: "finish", label: "Finish", icon: Layers },
+  { id: "drawings", label: "Drawings", icon: FileText },
   { id: "architect", label: "Architect", icon: MessageSquare },
   { id: "stills", label: "Stills", icon: Camera },
 ] as const;
@@ -688,6 +806,7 @@ export function Panel() {
           <div className="h-full overflow-y-auto pr-1">
             {tab === "pieces" ? <Catalog /> : null}
             {tab === "finish" ? <Finish /> : null}
+            {tab === "drawings" ? <Drawings /> : null}
             {tab === "stills" ? <Stills busy={busy} setBusy={setBusy} openArchitect={() => setTab("architect")} /> : null}
           </div>
         )}

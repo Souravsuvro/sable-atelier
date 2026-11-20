@@ -36,6 +36,23 @@ const ITEM_ALIAS: Record<string, ItemType> = {
   carpet: "rug",
   pouf: "ottoman",
   pouffe: "ottoman",
+  staircase: "stair",
+  stairs: "stair",
+  flight: "stair",
+  "gable-roof": "roof",
+  "swimming-pool": "pool",
+  "car-park": "parking",
+  "parking-bay": "parking",
+  driveway: "parking",
+  "play-frame": "playground",
+  playground: "playground",
+  "flower-bed": "garden-bed",
+  "shade-tree": "tree",
+  trees: "tree",
+  "task-lamp": "desk-lamp",
+  "task-light": "desk-lamp",
+  "wall-light": "sconce",
+  "ambient-light": "pendant",
 };
 
 function itemType(value: unknown): ItemType | null {
@@ -52,7 +69,8 @@ function wallFinish(value: unknown): WallFinish | null {
   const key = value.toLowerCase();
   if (key.includes("brick")) return "brick";
   if (key.includes("oak") || key.includes("timber") || key.includes("wood")) return "oak-panel";
-  if (key.includes("sage") || key.includes("green")) return "sage";
+  if (key.includes("sage")) return "sage";
+  if (key.includes("hedge")) return "hedge";
   if (key.includes("lime")) return "limewash";
   if (key.includes("concrete") || key.includes("board")) return "concrete";
   if (key.includes("plaster") || key.includes("white")) return "plaster";
@@ -63,6 +81,8 @@ function floorFinish(value: unknown): FloorFinish | null {
   if (oneOf(FLOORS, value)) return value;
   if (typeof value !== "string") return null;
   const key = value.toLowerCase();
+  if (key.includes("grass") || key.includes("lawn")) return "grass";
+  if (key.includes("gravel")) return "gravel";
   if (key.includes("marble") || key.includes("stone")) return "marble";
   if (key.includes("terrazzo") || key.includes("tile")) return "terrazzo";
   if (key.includes("concrete")) return "concrete";
@@ -109,6 +129,8 @@ const TOOL_ALIAS: Record<string, AgentCall["tool"]> = {
   clearfurniture: "clearFurniture",
   clear: "clearFurniture",
   setroomsize: "setRoomSize",
+  openspace: "openSpace",
+  opensite: "openSpace",
 };
 
 function parseCall(value: unknown): AgentCall | null {
@@ -157,6 +179,12 @@ function parseCall(value: unknown): AgentCall | null {
     return { tool, preset };
   }
   if (tool === "optimizeLayoutForSpace" || tool === "clearFurniture") return { tool };
+  if (tool === "openSpace") {
+    const name = typeof o.name === "string" ? o.name.trim().slice(0, 40) : "";
+    const kind = o.kind === "interior" || o.kind === "front" || o.kind === "back" || o.kind === "shell" ? o.kind : null;
+    if (!name || !kind) return null;
+    return { tool, name, kind };
+  }
   if (tool === "removeFurniture") {
     const item = itemType(o.itemType ?? o.type);
     const id = typeof o.id === "string" ? o.id : undefined;

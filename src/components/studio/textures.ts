@@ -126,6 +126,34 @@ function noise(ctx: CanvasRenderingContext2D, size: number) {
   }
 }
 
+function grass(ctx: CanvasRenderingContext2D, size: number) {
+  ctx.fillStyle = "#5c7a4e";
+  ctx.fillRect(0, 0, size, size);
+  const next = rand(11);
+  for (let i = 0; i < 1400; i += 1) {
+    ctx.strokeStyle = `rgba(${40 + next() * 40}, ${90 + next() * 50}, ${40}, 0.45)`;
+    ctx.beginPath();
+    const x = next() * size;
+    const y = next() * size;
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + 1, y - 6);
+    ctx.stroke();
+  }
+}
+
+function gravel(ctx: CanvasRenderingContext2D, size: number) {
+  ctx.fillStyle = "#c8c0b4";
+  ctx.fillRect(0, 0, size, size);
+  const next = rand(13);
+  for (let i = 0; i < 700; i += 1) {
+    const shade = 110 + next() * 70;
+    ctx.fillStyle = `rgb(${shade}, ${shade - 8}, ${shade - 16})`;
+    ctx.beginPath();
+    ctx.arc(next() * size, next() * size, 1 + next() * 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
 function make(key: string): THREE.CanvasTexture {
   switch (key) {
     case "oak":
@@ -138,6 +166,10 @@ function make(key: string): THREE.CanvasTexture {
       return textureFrom(marble, 1.5);
     case "terrazzo":
       return textureFrom(terrazzo, 1.5);
+    case "grass":
+      return textureFrom(grass, 2);
+    case "gravel":
+      return textureFrom(gravel, 2);
     case "brick":
       return textureFrom(brick, 2);
     case "oak-panel":

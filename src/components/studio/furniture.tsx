@@ -245,6 +245,123 @@ function Ottoman({ color }: { color: string }) {
   return <Sharp args={[w, h * 0.7, d]} position={[0, h * 0.4, 0]} color={color} />;
 }
 
+function Pendant() {
+  const { height: h } = CATALOG.pendant;
+  return (
+    <group>
+      <Sharp args={[0.02, 0.35, 0.02]} position={[0, h, 0]} color="#1c1a17" shadow={false} />
+      <Sharp args={[0.36, 0.22, 0.36]} position={[0, h * 0.35, 0]} color="#f3eee6" roughness={0.45} />
+    </group>
+  );
+}
+
+function Sconce() {
+  return <Sharp args={[0.14, 0.22, 0.1]} position={[0, 0.14, 0]} color="#f3eee6" roughness={0.4} />;
+}
+
+function DeskLamp() {
+  const { height: h } = CATALOG["desk-lamp"];
+  return (
+    <group>
+      <Sharp args={[0.16, 0.02, 0.16]} position={[0, 0.02, 0]} color="#221f1c" />
+      <Sharp args={[0.03, h * 0.7, 0.03]} position={[0, h * 0.4, 0]} color="#221f1c" />
+      <Sharp args={[0.2, 0.08, 0.2]} position={[0, h * 0.82, 0]} color="#f3eee6" />
+    </group>
+  );
+}
+
+function Stair({ color }: { color: string }) {
+  const steps = 8;
+  const rise = 2.5 / steps;
+  const run = 2.1 / steps;
+  return (
+    <group>
+      {Array.from({ length: steps }, (_, i) => (
+        <Sharp key={i} args={[1, rise, run]} position={[0, rise * (i + 0.5), -1.05 + run * (i + 0.5)]} color={color} roughness={0.7} />
+      ))}
+      <Sharp args={[0.04, 1.1, 2.15]} position={[-0.52, 1.3, 0]} color="#221f1c" />
+    </group>
+  );
+}
+
+function Roof({ color }: { color: string }) {
+  return (
+    <group>
+      <Sharp args={[5.6, 0.08, 4.2]} position={[0, 0.2, 0]} color="#e7e0d4" roughness={0.8} />
+      <mesh position={[0, 0.7, 0]} rotation={[0, 0, 0]} castShadow>
+        <coneGeometry args={[3.15, 1.15, 4]} />
+        <meshStandardMaterial color={color} roughness={0.72} />
+      </mesh>
+    </group>
+  );
+}
+
+function Pool() {
+  const { width: w, depth: d } = CATALOG.pool;
+  return (
+    <group>
+      <Sharp args={[w + 0.28, 0.16, d + 0.28]} position={[0, 0.08, 0]} color="#d9d0c3" roughness={0.7} />
+      <Sharp args={[w, 0.08, d]} position={[0, 0.16, 0]} color="#8ec4d4" roughness={0.15} metalness={0.05} shadow={false} />
+    </group>
+  );
+}
+
+function Parking() {
+  const { width: w, depth: d } = CATALOG.parking;
+  return (
+    <group>
+      <Sharp args={[w, 0.04, d]} position={[0, 0.03, 0]} color="#3a3834" roughness={0.9} />
+      <Sharp args={[1.7, 0.55, 3.6]} position={[0, 0.42, 0.2]} color="#243044" roughness={0.45} />
+      <Sharp args={[1.5, 0.28, 1.1]} position={[0, 0.72, -0.7]} color="#1c2836" roughness={0.3} />
+    </group>
+  );
+}
+
+function Playground({ color }: { color: string }) {
+  return (
+    <group>
+      <Sharp args={[0.08, 1.6, 0.08]} position={[-0.9, 0.8, -0.5]} color={color} />
+      <Sharp args={[0.08, 1.6, 0.08]} position={[0.9, 0.8, -0.5]} color={color} />
+      <Sharp args={[1.9, 0.08, 0.08]} position={[0, 1.55, -0.5]} color={color} />
+      <Sharp args={[0.04, 1.1, 0.04]} position={[-0.25, 0.7, -0.5]} color="#1c1a17" shadow={false} />
+      <Sharp args={[0.28, 0.06, 0.16]} position={[-0.25, 0.2, -0.5]} color="#8f3d36" />
+    </group>
+  );
+}
+
+function GardenBed() {
+  const { width: w, depth: d } = CATALOG["garden-bed"];
+  return (
+    <group>
+      <Sharp args={[w, 0.22, d]} position={[0, 0.12, 0]} color="#6b4a32" roughness={0.8} />
+      <Sharp args={[w * 0.92, 0.12, d * 0.75]} position={[0, 0.26, 0]} color="#3f5346" roughness={0.9} />
+    </group>
+  );
+}
+
+function Tree() {
+  return (
+    <group>
+      <Sharp args={[0.18, 1.1, 0.18]} position={[0, 0.55, 0]} color="#4a3222" />
+      <mesh position={[0, 1.7, 0]} castShadow>
+        <sphereGeometry args={[0.7, 16, 12]} />
+        <meshStandardMaterial color="#2f4636" roughness={0.85} />
+      </mesh>
+    </group>
+  );
+}
+
+function Bench({ color }: { color: string }) {
+  return (
+    <group>
+      <Sharp args={[1.4, 0.06, 0.4]} position={[0, 0.42, 0]} color={color} />
+      <Sharp args={[1.4, 0.4, 0.06]} position={[0, 0.62, -0.17]} color={color} />
+      <Sharp args={[0.06, 0.4, 0.36]} position={[-0.64, 0.2, 0]} color="#221f1c" />
+      <Sharp args={[0.06, 0.4, 0.36]} position={[0.64, 0.2, 0]} color="#221f1c" />
+    </group>
+  );
+}
+
 function Body({ type, color }: { type: ItemType; color: string }) {
   switch (type) {
     case "sofa":
@@ -271,6 +388,28 @@ function Body({ type, color }: { type: ItemType; color: string }) {
       return <Rug color={color} />;
     case "ottoman":
       return <Ottoman color={color} />;
+    case "pendant":
+      return <Pendant />;
+    case "sconce":
+      return <Sconce />;
+    case "desk-lamp":
+      return <DeskLamp />;
+    case "stair":
+      return <Stair color={color} />;
+    case "roof":
+      return <Roof color={color} />;
+    case "pool":
+      return <Pool />;
+    case "parking":
+      return <Parking />;
+    case "playground":
+      return <Playground color={color} />;
+    case "garden-bed":
+      return <GardenBed />;
+    case "tree":
+      return <Tree />;
+    case "bench":
+      return <Bench color={color} />;
     default:
       return null;
   }

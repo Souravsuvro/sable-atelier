@@ -1,19 +1,23 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { CATALOG } from "@/lib/studio/catalog";
-import { clampNode, createDefaultScene, findOpenSpot, reduceCalls, sanitizeScene } from "@/lib/studio/layout";
+import { clampNode, createDefaultScene, createSpaceScene, findOpenSpot, reduceCalls, sanitizeScene } from "@/lib/studio/layout";
 import {
   type AgentCall,
   type ChatMessage,
+  type Drawing,
   type FloorFinish,
   type FurnitureNode,
   type ItemType,
   type LightingPreset,
   type RenderJob,
   type RoomSize,
+  type SavedSpace,
+  type SpaceKind,
   type StudioScene,
   type WallFinish,
   type WallId,
+  makeId,
 } from "@/lib/studio/types";
 
 interface Snap {
@@ -37,6 +41,11 @@ interface StudioStore extends StudioScene {
   referenceUrl: string | null;
   referenceName: string | null;
   canvasEpoch: number;
+  spaceId: string;
+  spaceName: string;
+  spaceKind: SpaceKind;
+  spaces: SavedSpace[];
+  drawings: Drawing[];
   select: (id: string | null) => void;
   beginGesture: () => void;
   endGesture: () => void;
@@ -44,6 +53,9 @@ interface StudioStore extends StudioScene {
   updateNode: (id: string, patch: Partial<FurnitureNode>) => void;
   placeItem: (type: ItemType) => void;
   applyCalls: (calls: AgentCall[]) => string[];
+  openSpace: (name: string, kind: SpaceKind) => void;
+  addDrawing: (drawing: Drawing) => void;
+  removeDrawing: (id: string) => void;
   undo: () => void;
   redo: () => void;
   replaceScene: (scene: StudioScene) => void;
@@ -69,12 +81,21 @@ function snap(s: StudioStore): Snap {
 }
 
 const initial = createDefaultScene();
+const FIRST_SPACE = "living";
+
+function sceneOf(s: StudioScene): StudioScene {
+  return { room: { ...s.room }, floor: s.floor, walls: { ...s.walls }, lighting: s.lighting, nodes: s.nodes.map((n) => ({ ...n })) };
+}
+
+function withActive(spaces: SavedSpace[], spaceId: string, scene: StudioScene): SavedSpace[] {
+  return spaces.map((space) => (space.id === spaceId ? { ...space, scene } : space));
+}
 
 const HELLO: ChatMessage = {
   id: "hello",
   role: "architect",
   source: "studio",
-  text: "The model room is open. Ask for a mood, a piece, or a correction and I will place it and tell you why.",
+  text: "The project is open. Ask for a room, the light, a stair, a roof, or the yards. I will change the model and tell you why.",
 };
 
 function planStorage() {
@@ -115,6 +136,11 @@ export const useStudio = create<StudioStore>()(
       referenceUrl: null,
       referenceName: null,
       canvasEpoch: 0,
+      spaceId: FIRST_SPACE,
+      spaceName: "Living",
+      spaceKind: "interior",
+      spaces: [{ id: FIRST_SPACE, name: "Living", kind: "interior", scene: sceneOf(initial) }],
+      drawings: [],
       select: (id) => set({ selectedId: id }),
       beginGesture: () => {
         const s = get();
@@ -156,12 +182,21 @@ export const useStudio = create<StudioStore>()(
       },
       applyCalls: (calls) => {
         if (calls.length === 0) return [];
+        const opens = calls.filter((call): call is Extract<AgentCall, { tool: "openSpace" }> => call.tool === "openSpace");
+        if (opens.length > 0) {
+          const last = opens[opens.length - 1];
+          if (last) get().openSpace(last.name, last.kind);
+        }
+        const rest = calls.filter((call) => call.tool !== "openSpace");
+        if (rest.length === 0) return [get().lastLog].filter(Boolean);
         const s = get();
         const past = s.gesturing ? s.past : [...s.past, snap(s)].slice(-40);
         const future = s.gesturing ? s.future : [];
-        const result = reduceCalls(snap(s), calls, s.selectedId);
+        const result = reduceCalls(snap(s), rest, s.selectedId);
+        const scene = result.scene;
         set({
-          ...result.scene,
+          ...scene,
+          spaces: withActive(s.spaces, s.spaceId, scene),
           selectedId: result.selectedId,
           past,
           future,
@@ -170,6 +205,42 @@ export const useStudio = create<StudioStore>()(
         });
         return result.logs;
       },
+      openSpace: (name, kind) => {
+        const s = get();
+        const current = sceneOf(s);
+        const saved = withActive(s.spaces, s.spaceId, current);
+        const found = saved.find((space) => space.kind === kind && space.name.toLowerCase() === name.toLowerCase());
+        if (found && found.id !== s.spaceId) {
+          set({
+            spaces: saved,
+            spaceId: found.id,
+            spaceName: found.name,
+            spaceKind: found.kind,
+            ...found.scene,
+            selectedId: null,
+            past: [],
+            future: [],
+            lastLog: `Opened ${found.name}`,
+          });
+          return;
+        }
+        if (found) return;
+        const scene = createSpaceScene(kind);
+        const id = makeId();
+        set({
+          spaces: [...saved, { id, name, kind, scene }],
+          spaceId: id,
+          spaceName: name,
+          spaceKind: kind,
+          ...scene,
+          selectedId: null,
+          past: [],
+          future: [],
+          lastLog: `Opened ${name}`,
+        });
+      },
+      addDrawing: (drawing) => set((s) => ({ drawings: [drawing, ...s.drawings].slice(0, 8) })),
+      removeDrawing: (id) => set((s) => ({ drawings: s.drawings.filter((drawing) => drawing.id !== id) })),
       undo: () => {
         const s = get();
         const prev = s.past[s.past.length - 1];
@@ -227,7 +298,7 @@ export const useStudio = create<StudioStore>()(
     }),
     {
       name: "sable-atelier-v1",
-      version: 1,
+      version: 2,
       storage: createJSONStorage(planStorage),
       partialize: (s) => ({
         room: s.room,
@@ -235,6 +306,14 @@ export const useStudio = create<StudioStore>()(
         walls: s.walls,
         lighting: s.lighting,
         nodes: s.nodes,
+        spaceId: s.spaceId,
+        spaceName: s.spaceName,
+        spaceKind: s.spaceKind,
+        spaces: s.spaces,
+        drawings: s.drawings.map((drawing) => ({
+          ...drawing,
+          dataUrl: drawing.dataUrl && drawing.dataUrl.length < 350_000 ? drawing.dataUrl : null,
+        })),
         messages: s.messages.slice(-30).map((m) => ({
           ...m,
           text: m.text.slice(0, 800),
@@ -242,17 +321,44 @@ export const useStudio = create<StudioStore>()(
         })),
       }),
       merge: (persisted, current) => {
-        const raw = (persisted ?? {}) as Partial<StudioScene & { messages?: ChatMessage[] }>;
+        const raw = (persisted ?? {}) as Partial<
+          StudioScene & {
+            messages?: ChatMessage[];
+            spaces?: SavedSpace[];
+            spaceId?: string;
+            spaceName?: string;
+            spaceKind?: SpaceKind;
+            drawings?: Drawing[];
+          }
+        >;
         const clean = sanitizeScene(raw);
         const messages = Array.isArray(raw.messages)
           ? raw.messages
               .filter((m) => m && (m.role === "user" || m.role === "architect") && typeof m.text === "string")
               .slice(-30)
           : current.messages;
+        const scene = clean ?? sceneOf(current);
+        const spaces =
+          Array.isArray(raw.spaces) && raw.spaces.length > 0
+            ? raw.spaces
+                .filter((space) => space && typeof space.id === "string" && typeof space.name === "string")
+                .map((space) => {
+                  const saved = sanitizeScene(space.scene);
+                  return saved ? { ...space, scene: saved } : null;
+                })
+                .filter((space): space is SavedSpace => space !== null)
+            : [{ id: FIRST_SPACE, name: "Living", kind: "interior" as const, scene }];
+        const spaceId = spaces.some((space) => space.id === raw.spaceId) ? raw.spaceId! : spaces[0]?.id ?? FIRST_SPACE;
+        const active = spaces.find((space) => space.id === spaceId) ?? spaces[0];
         return {
           ...current,
-          ...(clean ?? {}),
+          ...(active?.scene ?? scene),
           messages: messages.length > 0 ? messages : current.messages,
+          spaces: spaces.length > 0 ? spaces : current.spaces,
+          spaceId: active?.id ?? current.spaceId,
+          spaceName: active?.name ?? current.spaceName,
+          spaceKind: active?.kind ?? current.spaceKind,
+          drawings: Array.isArray(raw.drawings) ? raw.drawings.filter((drawing) => drawing && typeof drawing.name === "string").slice(0, 8) : [],
         };
       },
     },

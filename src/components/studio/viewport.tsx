@@ -24,14 +24,17 @@ const WALL_TINT: Record<WallFinish, string> = {
   brick: "#ffffff",
   "oak-panel": "#ffffff",
   sage: "#d5ddd2",
+  hedge: "#4f6a48",
 };
 
 const FLOOR_ROUGH: Record<FloorFinish, number> = {
   oak: 0.72,
-  walnut: 0.66,
-  concrete: 0.92,
+  walnut: 0.55,
+  concrete: 0.9,
   marble: 0.28,
-  terrazzo: 0.42,
+  terrazzo: 0.45,
+  grass: 0.95,
+  gravel: 0.92,
 };
 
 const RIG: Record<
@@ -240,7 +243,9 @@ function RoomShell() {
   const room = useStudio((s) => s.room);
   const walls = useStudio((s) => s.walls);
   const lighting = useStudio((s) => s.lighting);
-  const { width, depth, height } = room;
+  const outdoor = useStudio((s) => s.spaceKind === "front" || s.spaceKind === "back");
+  const { width, depth } = room;
+  const height = outdoor ? 0.42 : room.height;
   const t = 0.1;
   const north = useMemo(() => new THREE.Vector3(0, 0, -1), []);
   const south = useMemo(() => new THREE.Vector3(0, 0, 1), []);
@@ -252,7 +257,7 @@ function RoomShell() {
       <Floor />
       <Wall id="north" finish={walls.north} size={[width + t * 2, height, t]} position={[0, height / 2, -depth / 2 - t / 2]} outward={north} />
       <Wall id="south" finish={walls.south} size={[width + t * 2, height, t]} position={[0, height / 2, depth / 2 + t / 2]} outward={south}>
-        <SouthWindow glow={lighting === "evening" ? 0.2 : 0.9} />
+        {outdoor ? null : <SouthWindow glow={lighting === "evening" ? 0.2 : 0.9} />}
       </Wall>
       <Wall id="east" finish={walls.east} size={[t, height, depth]} position={[width / 2 + t / 2, height / 2, 0]} outward={east} />
       <Wall id="west" finish={walls.west} size={[t, height, depth]} position={[-width / 2 - t / 2, height / 2, 0]} outward={west} />
@@ -321,31 +326,33 @@ function TargetLock() {
 
 function ViewFrame() {
   const view = useStudio((s) => s.view);
+  const room = useStudio((s) => s.room);
   const { camera } = useThree();
   const { controlsRef } = useRig();
+  const span = Math.max(room.width, room.depth);
 
   useLayoutEffect(() => {
     const controls = controlsRef.current;
     if (!controls) return;
     if (view === "plan") {
-      camera.position.set(0.15, 11.2, 1.35);
+      camera.position.set(0.15, Math.max(11.2, span * 1.15), 1.35);
       controls.target.set(0, 0, 0);
       controls.enableRotate = false;
       controls.minPolarAngle = 0.05;
       controls.maxPolarAngle = 0.28;
       controls.minDistance = 7;
-      controls.maxDistance = 16;
+      controls.maxDistance = Math.max(16, span * 1.8);
     } else {
-      camera.position.set(0.35, 3.7, 6.35);
+      camera.position.set(0.35, Math.max(3.7, room.height * 0.72), Math.max(6.35, span * 0.72));
       controls.target.set(0, 0.55, 0);
       controls.enableRotate = true;
       controls.minPolarAngle = 0.18;
       controls.maxPolarAngle = Math.PI / 2 - 0.06;
       controls.minDistance = 2.8;
-      controls.maxDistance = 14;
+      controls.maxDistance = Math.max(14, span * 1.6);
     }
     controls.update?.();
-  }, [view, camera, controlsRef]);
+  }, [view, camera, controlsRef, span, room.height]);
 
   return null;
 }

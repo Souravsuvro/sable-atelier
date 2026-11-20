@@ -1,6 +1,17 @@
 import { CATALOG, PRESET_COPY, presetCalls } from "@/lib/studio/catalog";
-import { findOpenSpot } from "@/lib/studio/layout";
-import type { AgentCall, ItemType, PresetName, StudioScene } from "@/lib/studio/types";
+import { createSpaceScene, findOpenSpot } from "@/lib/studio/layout";
+import type { AgentCall, ItemType, PresetName, RoomSize, SpaceKind, StudioScene } from "@/lib/studio/types";
+
+export const STARTERS = [
+  "Lay out the front yard with a pool, parking, and a play frame",
+  "Design the backyard as a garden with beds, a shade tree, and a bench",
+  "Show the shell with one stair flight and a gable roof",
+  "Layer the light with a pendant, a task lamp, and a sconce",
+  "Open a quiet bedroom with evening light",
+  "Set this up as an office",
+  "A calm house",
+  "Add a navy chair",
+];
 
 export interface ArchitectPlan {
   rationale: string;
@@ -8,6 +19,17 @@ export interface ArchitectPlan {
 }
 
 const PATTERNS: [RegExp, ItemType][] = [
+  [/swimming pools?|\bpools?\b/i, "pool"],
+  [/parking bays?|car parks?|driveways?/i, "parking"],
+  [/playgrounds?|play frames?|play grounds?/i, "playground"],
+  [/garden beds?|flower beds?|beds of plants/i, "garden-bed"],
+  [/shade trees?|\btrees?\b/i, "tree"],
+  [/benches?/i, "bench"],
+  [/stairs?|staircases?|flights?/i, "stair"],
+  [/gable roofs?|\broofs?\b/i, "roof"],
+  [/pendants?|ambient lights?/i, "pendant"],
+  [/sconces?|wall lights?|accent lights?/i, "sconce"],
+  [/desk lamps?|task lights?|task lamps?/i, "desk-lamp"],
   [/dining tables?/i, "dining-table"],
   [/coffee tables?/i, "coffee-table"],
   [/dining chairs?/i, "dining-chair"],
@@ -15,13 +37,14 @@ const PATTERNS: [RegExp, ItemType][] = [
   [/sofas?|couches|sectionals?/i, "sofa"],
   [/bookshel(?:f|ves)|bookcases?/i, "bookshelf"],
   [/sideboards?|credenzas?/i, "sideboard"],
-  [/floor lamps?|lamps?/i, "floor-lamp"],
-  [/plants?|olives?|trees?/i, "plant"],
+  [/floor lamps?/i, "floor-lamp"],
+  [/plants?|olives?/i, "plant"],
   [/ottomans?|poufs?|pouffes?/i, "ottoman"],
   [/rugs?|carpets?/i, "rug"],
   [/beds?/i, "bed"],
   [/chairs?/i, "armchair"],
   [/tables?/i, "coffee-table"],
+  [/lamps?/i, "floor-lamp"],
 ];
 
 const COLORS: [RegExp, string][] = [
@@ -88,13 +111,32 @@ function tweakCalls(q: string): AgentCall[] {
 }
 
 function pickPreset(q: string): PresetName {
+  if (/front yard|frontyard|swimming|driveway/.test(q)) return "front-yard";
+  if (/back\s?yard|garden/.test(q)) return "backyard";
+  if (/shell|gable|staircase|the stairs? and/.test(q)) return "shell";
   if (/workspace|home office|desk/.test(q)) return "workspace";
   if (/office|meeting room|studio office/.test(q)) return "office";
   if (/bedroom|sleep/.test(q)) return "bedroom";
-  if (/dining|supper/.test(q)) return "dining";
+  if (/dining|supper|kitchen/.test(q)) return "dining";
   if (/gallery|museum|minimal/.test(q)) return "gallery";
   if (/moody|evening lounge|night/.test(q)) return "moody";
   return "living";
+}
+
+function spaceFor(preset: PresetName): { name: string; kind: SpaceKind } | null {
+  if (preset === "front-yard") return { name: "Front yard", kind: "front" };
+  if (preset === "backyard") return { name: "Backyard", kind: "back" };
+  if (preset === "shell") return { name: "Shell", kind: "shell" };
+  if (preset === "bedroom") return { name: "Bedroom", kind: "interior" };
+  if (preset === "dining") return { name: "Dining", kind: "interior" };
+  if (preset === "office") return { name: "Office", kind: "interior" };
+  if (preset === "workspace") return { name: "Workspace", kind: "interior" };
+  if (preset === "living") return { name: "Living", kind: "interior" };
+  return null;
+}
+
+function roomFor(kind: SpaceKind): RoomSize {
+  return createSpaceScene(kind).room;
 }
 
 function describe(calls: AgentCall[]): string {
@@ -108,6 +150,7 @@ function describe(calls: AgentCall[]): string {
     else if (call.tool === "optimizeLayoutForSpace") bits.push("pull the plan back into a walkable arrangement");
     else if (call.tool === "clearFurniture") bits.push("clear the floor");
     else if (call.tool === "setRoomSize") bits.push("resize the room");
+    else if (call.tool === "openSpace") bits.push(`open ${call.name.toLowerCase()}`);
   }
   if (bits.length === 0) return "Nothing in that note changes the model. Try a mood, a finish, or a piece.";
   const unique = [...new Set(bits)].slice(0, 4);
@@ -118,7 +161,56 @@ export function interpretBrief(text: string, scene: StudioScene): ArchitectPlan 
   const q = text.toLowerCase();
   const adding = /\b(add|place|put|drop|need|insert|include|bring)\b/.test(q);
   const removing = /\b(remove|delete|take away|get rid)\b/.test(q);
-  const styling = /\b(japandi|scandi|scandinavian|moody|gallery|bedroom|dining room|living room|lounge|restyle|redesign|make this|turn this|scheme|office|workspace|home office|house|meeting room)\b/.test(q);
+  if (/pool|parking|playground|front yard|frontyard|driveway|back\s?yard|garden|stair|roof|gable|shell/.test(q)) {
+    const outdoor = /pool|parking|playground|front yard|frontyard|driveway/.test(q)
+      ? { name: "Front yard", kind: "front" as const, preset: "front-yard" as const }
+      : /back\s?yard|garden/.test(q)
+        ? { name: "Backyard", kind: "back" as const, preset: "backyard" as const }
+        : { name: "Shell", kind: "shell" as const, preset: "shell" as const };
+    const whole = /lay out|set up|design the|scheme|front yard|back\s?yard|the garden|the shell|stairs and roof|roof and stair/.test(q);
+    const room = roomFor(outdoor.kind);
+    const calls: AgentCall[] = [{ tool: "openSpace", name: outdoor.name, kind: outdoor.kind }];
+    let scheme = whole;
+    if (whole) calls.push(...presetCalls(outdoor.preset, room));
+    else {
+      for (const type of mentioned(q)) {
+        calls.push({ tool: "placeFurnitureItem", itemType: type, x: 0, y: 0, z: 0.4, color: mentionedColor(q) ?? CATALOG[type].color });
+      }
+      if (calls.length === 1) {
+        calls.push(...presetCalls(outdoor.preset, room));
+        scheme = true;
+      }
+    }
+    const placed = calls.filter((call) => call.tool === "placeFurnitureItem").length;
+    return {
+      rationale: scheme ? PRESET_COPY[outdoor.preset] : `I'll open the ${outdoor.name.toLowerCase()} and place ${placed === 1 ? "that" : "what you named"}.`,
+      calls,
+    };
+  }
+
+  const lights = mentioned(q).filter((type) => type === "pendant" || type === "sconce" || type === "desk-lamp" || type === "floor-lamp");
+  if (lights.length > 0 && /light|lamp|pendant|sconce/.test(q)) {
+    const calls: AgentCall[] = [];
+    let nodes = scene.nodes;
+    for (const type of lights) {
+      const spot = findOpenSpot(nodes, type, scene.room);
+      calls.push({
+        tool: "placeFurnitureItem",
+        itemType: type,
+        x: spot.x,
+        y: 0,
+        z: spot.z,
+        color: CATALOG[type].color,
+      });
+      nodes = [...nodes, { id: "pending", type, x: spot.x, y: 0, z: spot.z, rotationY: 0, scale: 1, color: CATALOG[type].color }];
+    }
+    return {
+      rationale: "Light works in layers. A pendant is the ambient light, a task lamp sits where someone works or reads, and a sconce washes the wall. I'll add the ones you named and leave the furniture.",
+      calls,
+    };
+  }
+
+  const styling = /\b(japandi|scandi|scandinavian|moody|gallery|bedroom|dining room|living room|lounge|restyle|redesign|make this|turn this|scheme|office|workspace|home office|house|meeting room|kitchen|lighting)\b/.test(q);
 
   if (/reading corner|reading nook|place to read/.test(q)) {
     const calls: AgentCall[] = [];
@@ -162,7 +254,12 @@ export function interpretBrief(text: string, scene: StudioScene): ArchitectPlan 
 
   if (styling) {
     const name = pickPreset(q);
-    const calls = [...presetCalls(name, scene.room), ...tweakCalls(q)];
+    const space = spaceFor(name);
+    const calls: AgentCall[] = [];
+    if (space && /bedroom|dining|kitchen|office|workspace|living|house/.test(q)) {
+      calls.push({ tool: "openSpace", name: name === "dining" && /kitchen/.test(q) ? "Kitchen" : space.name, kind: space.kind });
+    }
+    calls.push(...presetCalls(name, space ? roomFor(space.kind) : scene.room), ...tweakCalls(q));
     return { rationale: PRESET_COPY[name], calls };
   }
 

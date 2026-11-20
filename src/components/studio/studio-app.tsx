@@ -1,15 +1,26 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState, type FormEvent } from "react";
 import { PanelRightClose, PanelRightOpen, Redo2, Smartphone, Undo2 } from "lucide-react";
 import { Wordmark } from "@/components/studio/boot";
 import { Inspector, Panel } from "@/components/studio/panel";
 import { Button } from "@/components/ui/button";
-import { PRESET_LABEL, presetCalls } from "@/lib/studio/catalog";
+import { confirmMembership } from "@/lib/studio/access";
+import { presetCalls } from "@/lib/studio/catalog";
 import { coverageRatio } from "@/lib/studio/layout";
 import { useStudio } from "@/lib/studio/store";
-import type { PresetName } from "@/lib/studio/types";
+import type { PresetName, SpaceKind } from "@/lib/studio/types";
 
-const HEADER_PRESETS: PresetName[] = ["living", "office", "workspace"];
+const CHECKOUT = "https://whop.com/checkout/plan_HsFW7j49G6JqA";
 const OFFER_KEY = "sable-offer-seen";
+const MEMBER_KEY = "sable-member";
+
+const SITES: { name: string; kind: SpaceKind; preset: PresetName; title: string }[] = [
+  { name: "Living", kind: "interior", preset: "living", title: "House" },
+  { name: "Office", kind: "interior", preset: "office", title: "Office" },
+  { name: "Workspace", kind: "interior", preset: "workspace", title: "Workspace" },
+  { name: "Front yard", kind: "front", preset: "front-yard", title: "Front" },
+  { name: "Backyard", kind: "back", preset: "backyard", title: "Back" },
+  { name: "Shell", kind: "shell", preset: "shell", title: "Shell" },
+];
 
 const Viewport = lazy(() => import("@/components/studio/viewport").then((mod) => ({ default: mod.Viewport })));
 const ArDialog = lazy(() => import("@/components/studio/ar-dialog").then((mod) => ({ default: mod.ArDialog })));
@@ -29,14 +40,43 @@ const PROGRAMS: { name: PresetName; title: string; line: string }[] = [
 ];
 
 function Offer({ onOpen }: { onOpen: (name: PresetName | null) => void }) {
+  const [email, setEmail] = useState("");
+  const [note, setNote] = useState("");
+  const [pending, setPending] = useState(false);
+  const preview = import.meta.env.DEV;
+
+  async function confirm(event: FormEvent) {
+    event.preventDefault();
+    if (pending) return;
+    setPending(true);
+    setNote("");
+    try {
+      const result = await confirmMembership({ data: { email } });
+      if (!result.ok) {
+        setNote(result.reason);
+        return;
+      }
+      try {
+        window.sessionStorage.setItem(MEMBER_KEY, "1");
+      } catch {
+        /* embedded preview may block storage */
+      }
+      onOpen(null);
+    } catch {
+      setNote("Could not reach the membership check.");
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-30 flex overflow-y-auto bg-ink text-cream">
       <div className="mx-auto flex w-full max-w-3xl flex-col justify-between gap-10 px-6 py-8 sm:px-10 sm:py-12">
         <div>
           <p className="text-xs uppercase tracking-widest text-muted">Sable Atelier</p>
-          <h1 className="mt-4 max-w-xl font-display text-4xl leading-tight sm:text-5xl">Design the room by writing it.</h1>
+          <h1 className="mt-4 max-w-xl font-display text-4xl leading-tight sm:text-5xl">Design the building by writing it.</h1>
           <p className="mt-4 max-w-lg text-base text-muted">
-            A house, an office, or a workspace. Say what should change and the model moves. Plans stay on this device.
+            Rooms, light, stairs, a roof, a front yard, and a garden. Upload the architect’s drawings. Say what should change and the model moves.
           </p>
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             {PROGRAMS.map((program) => (
@@ -44,7 +84,7 @@ function Offer({ onOpen }: { onOpen: (name: PresetName | null) => void }) {
                 key={program.name}
                 type="button"
                 className="rounded-2xl border border-line px-4 py-4 text-left transition-[border-color,background-color] duration-150 hover:border-brass hover:bg-line/40"
-                onClick={() => onOpen(program.name)}
+                onClick={() => (preview ? onOpen(program.name) : window.open(CHECKOUT, "_blank", "noopener,noreferrer"))}
               >
                 <span className="block font-display text-2xl">{program.title}</span>
                 <span className="mt-2 block text-sm text-muted">{program.line}</span>
@@ -52,27 +92,36 @@ function Offer({ onOpen }: { onOpen: (name: PresetName | null) => void }) {
             ))}
           </div>
         </div>
-        <div className="flex flex-col gap-4 border-t border-line pt-6 sm:flex-row sm:items-end sm:justify-between">
-          <p className="max-w-md text-sm text-muted">
-            Membership is £29 a month. It is how this practice is paid for. The model opens either way.
-          </p>
+        <div className="flex flex-col gap-4 border-t border-line pt-6">
+          <p className="max-w-md text-sm text-muted">Membership is £29 a month. The model stays locked until Whop confirms the email you paid with.</p>
           <div className="flex flex-wrap gap-2">
-            <a
-              className="inline-flex min-h-11 items-center rounded-full bg-brass px-4 text-sm font-medium text-ink"
-              href="https://whop.com/checkout/plan_HsFW7j49G6JqA"
-              target="_blank"
-              rel="noreferrer"
-            >
+            <a className="inline-flex min-h-11 items-center rounded-full bg-brass px-4 text-sm font-medium text-ink" href={CHECKOUT} target="_blank" rel="noreferrer">
               Subscribe
             </a>
-            <button
-              type="button"
-              className="inline-flex min-h-11 items-center rounded-full border border-line px-4 text-sm text-cream"
-              onClick={() => onOpen(null)}
-            >
-              Open the model
-            </button>
+            {preview ? (
+              <button type="button" className="inline-flex min-h-11 items-center rounded-full border border-line px-4 text-sm text-cream" onClick={() => onOpen(null)}>
+                Preview the model
+              </button>
+            ) : null}
           </div>
+          <form className="flex flex-col gap-2 sm:flex-row" onSubmit={(event) => void confirm(event)}>
+            <label className="sr-only" htmlFor="member-email">
+              Membership email
+            </label>
+            <input
+              id="member-email"
+              type="email"
+              required
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="Email used at checkout"
+              className="h-11 min-w-0 flex-1 rounded-full border border-line bg-ink px-4 text-base text-cream outline-none focus:border-brass"
+            />
+            <button type="submit" disabled={pending} className="inline-flex min-h-11 items-center justify-center rounded-full border border-line px-4 text-sm text-cream">
+              {pending ? "Checking…" : "Unlock"}
+            </button>
+          </form>
+          {note ? <p className="text-sm text-brass">{note}</p> : null}
         </div>
       </div>
     </div>
@@ -100,7 +149,16 @@ export function StudioApp() {
   const lastLog = useStudio((s) => s.lastLog);
   const undo = useStudio((s) => s.undo);
   const redo = useStudio((s) => s.redo);
-  const applyCalls = useStudio((s) => s.applyCalls);
+  const spaces = useStudio((s) => s.spaces);
+  const spaceId = useStudio((s) => s.spaceId);
+  const spaceName = useStudio((s) => s.spaceName);
+
+  function enterSite(name: string, kind: SpaceKind, preset: PresetName) {
+    const state = useStudio.getState();
+    const exists = state.spaces.some((space) => space.kind === kind && space.name.toLowerCase() === name.toLowerCase());
+    state.openSpace(name, kind);
+    if (!exists) state.applyCalls(presetCalls(preset, useStudio.getState().room));
+  }
   const setArOpen = useStudio((s) => s.setArOpen);
   const view = useStudio((s) => s.view);
   const setView = useStudio((s) => s.setView);
@@ -111,7 +169,9 @@ export function StudioApp() {
 
   useEffect(() => {
     try {
-      setOffer(window.sessionStorage.getItem(OFFER_KEY) !== "1");
+      const member = window.sessionStorage.getItem(MEMBER_KEY) === "1";
+      const seen = window.sessionStorage.getItem(OFFER_KEY) === "1";
+      setOffer(import.meta.env.DEV ? !seen : !member);
     } catch {
       setOffer(true);
     }
@@ -123,7 +183,7 @@ export function StudioApp() {
     } catch {
       /* storage can be blocked in an embedded frame */
     }
-    if (name) applyCalls(presetCalls(name, useStudio.getState().room));
+    if (name) useStudio.getState().applyCalls(presetCalls(name, useStudio.getState().room));
     setOffer(false);
   }
 
@@ -229,13 +289,29 @@ export function StudioApp() {
               Plan
             </button>
           </div>
-          {HEADER_PRESETS.map((name) => (
-            <Button key={name} tone="line" className="shrink-0" disabled={!ready} onClick={() => applyCalls(presetCalls(name, useStudio.getState().room))}>
-              {PRESET_LABEL[name]}
-            </Button>
-          ))}
+          {SITES.map((site) => {
+            const active = spaces.some((space) => space.id === spaceId && space.name.toLowerCase() === site.name.toLowerCase());
+            return (
+              <Button key={site.name} tone={active ? "brass" : "line"} className="shrink-0" disabled={!ready} onClick={() => enterSite(site.name, site.kind, site.preset)}>
+                {site.title}
+              </Button>
+            );
+          })}
+          {spaces
+            .filter((space) => !SITES.some((site) => site.kind === space.kind && site.name.toLowerCase() === space.name.toLowerCase()))
+            .map((space) => (
+              <Button
+                key={space.id}
+                tone={space.id === spaceId ? "brass" : "line"}
+                className="shrink-0"
+                disabled={!ready}
+                onClick={() => useStudio.getState().openSpace(space.name, space.kind)}
+              >
+                {space.name}
+              </Button>
+            ))}
           <p className="flex shrink-0 items-center px-2 text-xs tabular-nums text-muted">
-            {room.width.toFixed(1)} × {room.depth.toFixed(1)} m
+            {spaceName} · {room.width.toFixed(1)} × {room.depth.toFixed(1)} m
           </p>
         </div>
       </header>

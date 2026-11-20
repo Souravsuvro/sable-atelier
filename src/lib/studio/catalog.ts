@@ -23,6 +23,17 @@ export const CATALOG: Record<ItemType, PieceSpec> = {
   bed: { label: "Bed", width: 1.7, height: 1.05, depth: 2.15, color: "#e4dccf", y: 0, blurb: "Queen, low frame" },
   rug: { label: "Rug", width: 2.6, height: 0.02, depth: 1.7, color: "#8f3d36", y: 0, blurb: "Bound edge" },
   ottoman: { label: "Ottoman", width: 0.7, height: 0.4, depth: 0.5, color: "#6e5844", y: 0, blurb: "Upholstered" },
+  pendant: { label: "Pendant", width: 0.42, height: 0.55, depth: 0.42, color: "#f3eee6", y: 2.15, blurb: "Ambient light" },
+  sconce: { label: "Wall sconce", width: 0.16, height: 0.28, depth: 0.18, color: "#b8893d", y: 1.45, blurb: "Accent light" },
+  "desk-lamp": { label: "Task lamp", width: 0.22, height: 0.42, depth: 0.22, color: "#221f1c", y: 0, blurb: "Work light" },
+  stair: { label: "Stair", width: 1.05, height: 2.7, depth: 2.3, color: "#c4a574", y: 0, blurb: "One flight" },
+  roof: { label: "Gable roof", width: 5.6, height: 1.35, depth: 4.2, color: "#4a4038", y: 4.55, blurb: "Tiles over the shell" },
+  pool: { label: "Pool", width: 4.2, height: 0.28, depth: 2.3, color: "#7eb0c4", y: 0, blurb: "Front yard water" },
+  parking: { label: "Parking bay", width: 2.7, height: 0.9, depth: 5, color: "#2a261f", y: 0, blurb: "One car" },
+  playground: { label: "Play frame", width: 2.2, height: 1.7, depth: 1.5, color: "#b8893d", y: 0, blurb: "Swing frame" },
+  "garden-bed": { label: "Garden bed", width: 2.6, height: 0.32, depth: 1.1, color: "#3f5346", y: 0, blurb: "Planted border" },
+  tree: { label: "Shade tree", width: 1.6, height: 2.6, depth: 1.6, color: "#2f4636", y: 0, blurb: "Canopy" },
+  bench: { label: "Garden bench", width: 1.5, height: 0.8, depth: 0.48, color: "#6e4e34", y: 0, blurb: "Timber seat" },
 };
 
 export const DEFAULT_ROOM: RoomSize = { width: 6.2, depth: 4.8, height: 2.8 };
@@ -33,6 +44,8 @@ export const FLOOR_LABEL: Record<FloorFinish, string> = {
   concrete: "Honed concrete",
   marble: "Pale marble",
   terrazzo: "Warm terrazzo",
+  grass: "Lawn",
+  gravel: "Gravel",
 };
 
 export const WALL_LABEL: Record<WallFinish, string> = {
@@ -42,6 +55,7 @@ export const WALL_LABEL: Record<WallFinish, string> = {
   brick: "Soft brick",
   "oak-panel": "Oak panel",
   sage: "Sage wash",
+  hedge: "Hedge",
 };
 
 export const LIGHT_LABEL: Record<LightingPreset, string> = {
@@ -64,6 +78,8 @@ export const FLOOR_SWATCH: Record<FloorFinish, string> = {
   concrete: "linear-gradient(180deg, #c8c4bc, #b7b2a8)",
   marble: "linear-gradient(135deg, #f3eee6 0%, #e4ddd2 42%, #cfc8be 43%, #f7f3ec 70%, #ddd4c8 100%)",
   terrazzo: "radial-gradient(circle at 20% 30%, #b8893d 0 6px, transparent 7px), radial-gradient(circle at 70% 60%, #3f5346 0 5px, transparent 6px), radial-gradient(circle at 40% 80%, #8f3d36 0 4px, transparent 5px), #e7e0d4",
+  grass: "repeating-linear-gradient(90deg, #5d7a52 0 8px, #4e6b46 8px 16px)",
+  gravel: "radial-gradient(circle at 20% 40%, #8a847c 0 2px, transparent 3px), radial-gradient(circle at 70% 60%, #6e675e 0 2px, transparent 3px), #c2bbb0",
 };
 
 export const WALL_SWATCH: Record<WallFinish, string> = {
@@ -73,6 +89,7 @@ export const WALL_SWATCH: Record<WallFinish, string> = {
   brick: "repeating-linear-gradient(180deg, #8d5346 0 8px, #f3eee6 8px 11px), repeating-linear-gradient(90deg, transparent 0 18px, rgba(22,20,17,0.18) 18px 20px)",
   "oak-panel": "repeating-linear-gradient(90deg, #a97850 0 10px, #8a5a38 10px 12px)",
   sage: "linear-gradient(180deg, #d5ddd2, #c5cfc4)",
+  hedge: "linear-gradient(180deg, #6d8a5e, #3f5346)",
 };
 
 export const PRESET_LABEL: Record<PresetName, string> = {
@@ -83,6 +100,9 @@ export const PRESET_LABEL: Record<PresetName, string> = {
   moody: "Moody",
   office: "Office",
   workspace: "Workspace",
+  "front-yard": "Front yard",
+  backyard: "Backyard",
+  shell: "Shell",
 };
 
 export const PRESET_COPY: Record<PresetName, string> = {
@@ -96,6 +116,10 @@ export const PRESET_COPY: Record<PresetName, string> = {
     "A work table in the middle, two chairs for a conversation, and storage on the walls. The floor is walnut so the room reads as an office, not a dining room.",
   workspace:
     "One desk on the north wall, one chair, a lamp, and a case of books. Enough for a day of work, and a clear path behind the chair.",
+  "front-yard":
+    "The front of the lot. A pool sits to the west, a parking bay to the east, and a play frame where children can be seen from the house.",
+  backyard: "A garden on the lawn. Beds along the edges, a shade tree, and a bench in the shade.",
+  shell: "The building shell. One flight of stairs and a gable roof over the footprint. Furnish the rooms separately.",
 };
 
 export const PAINTS = ["#f3eee6", "#d9c7a6", "#3f5346", "#243044", "#8f3d36", "#1c1a17", "#b8893d", "#6b4a32"];
@@ -227,6 +251,44 @@ export function presetCalls(name: PresetName, room: RoomSize): AgentCall[] {
       place("floor-lamp", 1.2, deskZ + 0.05, 0, "#221f1c"),
       place("plant", hw - 0.48, hd - 0.48, 0, "#3f5344"),
       place("ottoman", 1.45, 0.85, 0, "#6e5844"),
+    ];
+  }
+
+  if (name === "front-yard") {
+    return [
+      { tool: "setRoomSize", width: 12, depth: 9 },
+      { tool: "modifyFloorMaterial", textureType: "grass" },
+      { tool: "modifyWallMaterial", textureType: "hedge", targetWallId: "all" },
+      { tool: "setLighting", preset: "north-light" },
+      { tool: "clearFurniture" },
+      place("pool", -2.4, -0.5, 0, "#7eb0c4"),
+      place("parking", 3.5, 0.3, 0, "#2a261f"),
+      place("playground", -2.1, 2.7, 0, "#b8893d"),
+      place("tree", 4.4, -3.1, 0, "#2f4636"),
+    ];
+  }
+
+  if (name === "backyard") {
+    return [
+      { tool: "setRoomSize", width: 12, depth: 9 },
+      { tool: "modifyFloorMaterial", textureType: "grass" },
+      { tool: "modifyWallMaterial", textureType: "hedge", targetWallId: "all" },
+      { tool: "setLighting", preset: "golden-hour" },
+      { tool: "clearFurniture" },
+      place("garden-bed", 0, -3.4, 0, "#3f5346"),
+      place("garden-bed", -3.6, 0.4, Math.PI / 2, "#4f6a48"),
+      place("tree", 2.6, 1.4, 0, "#2f4636"),
+      place("bench", -0.4, 1.6, 0.4, "#6e4e34"),
+      place("plant", 3.8, -2.2, 0, "#3f5344"),
+    ];
+  }
+
+  if (name === "shell") {
+    return [
+      { tool: "setRoomSize", width: 7.2, depth: 5.6 },
+      ...shell("concrete", "plaster", "gallery"),
+      place("stair", -2.1, 0.2, 0, "#c4a574"),
+      place("roof", 0, 0, 0, "#4a4038"),
     ];
   }
 

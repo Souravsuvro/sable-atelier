@@ -5,20 +5,31 @@ export const ITEM_TYPES = [
   "dining-table",
   "dining-chair",
   "floor-lamp",
+  "pendant",
+  "sconce",
+  "desk-lamp",
   "plant",
   "bookshelf",
   "sideboard",
   "bed",
   "rug",
   "ottoman",
+  "stair",
+  "roof",
+  "pool",
+  "parking",
+  "playground",
+  "garden-bed",
+  "tree",
+  "bench",
 ] as const;
 
 export type ItemType = (typeof ITEM_TYPES)[number];
 
-export const FLOORS = ["oak", "walnut", "concrete", "marble", "terrazzo"] as const;
+export const FLOORS = ["oak", "walnut", "concrete", "marble", "terrazzo", "grass", "gravel"] as const;
 export type FloorFinish = (typeof FLOORS)[number];
 
-export const WALL_FINISHES = ["plaster", "limewash", "concrete", "brick", "oak-panel", "sage"] as const;
+export const WALL_FINISHES = ["plaster", "limewash", "concrete", "brick", "oak-panel", "sage", "hedge"] as const;
 export type WallFinish = (typeof WALL_FINISHES)[number];
 
 export const WALLS = ["north", "south", "east", "west"] as const;
@@ -27,7 +38,7 @@ export type WallId = (typeof WALLS)[number];
 export const LIGHTS = ["north-light", "golden-hour", "evening", "gallery"] as const;
 export type LightingPreset = (typeof LIGHTS)[number];
 
-export const PRESETS = ["living", "dining", "bedroom", "gallery", "moody", "office", "workspace"] as const;
+export const PRESETS = ["living", "dining", "bedroom", "gallery", "moody", "office", "workspace", "front-yard", "backyard", "shell"] as const;
 export type PresetName = (typeof PRESETS)[number];
 
 export const RENDER_STATUSES = ["IN_QUEUE", "IN_PROGRESS", "COMPLETED", "FAILED"] as const;
@@ -58,6 +69,23 @@ export interface StudioScene {
   nodes: FurnitureNode[];
 }
 
+export type SpaceKind = "interior" | "front" | "back" | "shell";
+
+export interface SavedSpace {
+  id: string;
+  name: string;
+  kind: SpaceKind;
+  scene: StudioScene;
+}
+
+export interface Drawing {
+  id: string;
+  name: string;
+  mime: string;
+  size: number;
+  dataUrl: string | null;
+}
+
 export type AgentCall =
   | {
       tool: "placeFurnitureItem";
@@ -75,7 +103,8 @@ export type AgentCall =
   | { tool: "optimizeLayoutForSpace" }
   | { tool: "removeFurniture"; itemType?: ItemType; id?: string }
   | { tool: "clearFurniture" }
-  | { tool: "setRoomSize"; width: number; depth: number };
+  | { tool: "setRoomSize"; width: number; depth: number }
+  | { tool: "openSpace"; name: string; kind: SpaceKind };
 
 export interface ChatMessage {
   id: string;
